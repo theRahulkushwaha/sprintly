@@ -1,0 +1,203 @@
+================================================================
+                     SPRINTLY - HELP GUIDE
+          A Project Management Tool (Jira-like)
+================================================================
+ 
+TECH STACK
+----------
+  Frontend  : React.js (v19), Vite, Tailwind CSS v4, Zustand
+  Backend   : Node.js, Express.js v5
+  Database  : MongoDB Atlas
+  Auth      : JWT (JSON Web Tokens)
+  Docker    : Frontend (nginx) + Backend containers
+  Other     : DnD Kit (drag & drop), Framer Motion, Axios
+ 
+================================================================
+  PROJECT STRUCTURE
+================================================================
+ 
+sprintly/
+  ├── backend/
+  │   ├── controllers/
+  │   │   ├── authController.js     → register & login logic
+  │   │   └── taskController.js     → CRUD for tasks
+  │   ├── middleware/
+  │   │   └── auth.js               → JWT token verification
+  │   ├── models/
+  │   │   ├── User.js               → MongoDB user schema
+  │   │   └── Task.js               → MongoDB task schema
+  │   ├── routes/
+  │   │   ├── authRoutes.js         → /api/auth/*
+  │   │   └── taskRoutes.js         → /api/tasks/*
+  │   ├── server.js                 → Express app entry point
+  │   ├── .env                      → secrets (never commit this)
+  │   ├── Dockerfile                → backend Docker image
+  │   └── package.json
+  │
+  ├── src/
+  │   ├── components/
+  │   │   ├── board/
+  │   │   │   ├── Board.jsx         → Kanban board container
+  │   │   │   ├── Column.jsx        → Todo / In Progress / Done
+  │   │   │   ├── TaskCard.jsx      → draggable task card
+  │   │   │   └── TaskModal.jsx     → edit/delete task popup
+  │   │   ├── dashboard/
+  │   │   │   ├── MainContent.jsx   → stats and progress bars
+  │   │   │   └── RightPanel.jsx    → meetings and tickets panel
+  │   │   ├── layout/
+  │   │   │   ├── Sidebar.jsx       → left navigation bar
+  │   │   │   └── Topbar.jsx        → top bar with user info
+  │   │   └── ProtectedRoute.jsx    → blocks unauth'd access
+  │   ├── pages/
+  │   │   ├── Login.jsx             → login page
+  │   │   ├── Register.jsx          → register page
+  │   │   ├── Dashboard.jsx         → main dashboard page
+  │   │   └── BoardPage.jsx         → kanban board page
+  │   ├── services/
+  │   │   └── api.js                → axios instance with JWT
+  │   ├── store/
+  │   │   ├── useAuthStore.js       → auth state (zustand)
+  │   │   ├── useTaskStore.js       → tasks state (zustand)
+  │   │   └── useBoardStore.js      → board state (zustand)
+  │   ├── App.jsx                   → routes definition
+  │   ├── main.jsx                  → React entry point
+  │   └── index.css                 → Tailwind import
+  │
+  ├── Dockerfile.frontend           → frontend Docker image
+  ├── docker-compose.yml            → runs both containers
+  ├── nginx.conf                    → React Router fix for nginx
+  ├── vite.config.js                → Vite + Tailwind config
+  └── package.json
+ 
+================================================================
+  BEFORE YOU RUN - SETUP
+================================================================
+ 
+1. MongoDB Atlas Setup
+   -------------------
+   a. Go to https://cloud.mongodb.com
+   b. Create a free cluster (or use existing one)
+   c. Go to Security → Database Access
+   d. Create a database user with "Atlas Admin" role
+      (readWriteAnyDatabase at minimum)
+   e. Go to Security → Network Access
+   f. Add IP Address → Allow access from anywhere (0.0.0.0/0)
+      (required for Docker to connect)
+   g. Go to your Cluster → Connect → Drivers
+   h. Copy the connection string (SRV format)
+ 
+2. Create backend/.env file
+   -------------------------
+   Create a file at backend/.env with these values:
+ 
+   PORT=5000
+   MONGO_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/sprintly?retryWrites=true&w=majority&appName=Cluster0
+   JWT_SECRET=any_long_random_string_you_choose
+   CLIENT_ORIGIN=http://localhost:3000
+ 
+   Replace:
+   - <username>   → your Atlas database username
+   - <password>   → your Atlas database password
+   - cluster0.xxxxx → your actual cluster hostname from Atlas
+ 
+   ⚠️  NEVER commit .env to GitHub — it is in .gitignore
+ 
+================================================================
+  HOW TO RUN
+================================================================
+ 
+OPTION 1 — Docker (Recommended)
+---------------------------------
+  Requirements: Docker Desktop installed and running
+ 
+  Step 1: Open terminal in the project root folder
+  Step 2: Run this command:
+ 
+    docker-compose up --build
+ 
+  Step 3: Open browser:
+    Frontend  →  http://localhost:3000
+    Backend   →  http://localhost:5000/health
+ 
+  To stop:
+    docker-compose down
+ 
+  To restart without rebuilding:
+    docker-compose up
+ 
+  To rebuild after code changes:
+    docker-compose up --build
+ 
+ 
+OPTION 2 — Local Development (No Docker)
+------------------------------------------
+  Requirements: Node.js v20+ installed
+ 
+  Terminal 1 (Backend):
+    cd backend
+    npm install
+    npm run dev
+ 
+  Terminal 2 (Frontend):
+    npm install
+    npm run dev
+ 
+  Open browser:
+    Frontend  →  http://localhost:5173
+    Backend   →  http://localhost:5000/health
+ 
+================================================================
+  HOW THE APP WORKS
+================================================================
+ 
+1. REGISTER
+   ---------
+   - Go to http://localhost:3000
+   - Click "Register"
+   - Enter your name, email, and password (min 6 chars)
+   - You will be automatically logged in and sent to dashboard
+ 
+2. LOGIN
+   ------
+   - Enter your registered email and password
+   - On success, a JWT token is saved in localStorage
+   - You are redirected to the Dashboard
+ 
+3. DASHBOARD
+   ----------
+   - Shows a summary of all your tasks
+   - To Do / In Progress / Done counts
+   - Progress bar showing overall completion
+   - Recent tasks list
+ 
+4. BOARD (Kanban)
+   ---------------
+   - Click the board icon in the left sidebar
+   - Three columns: To Do | In Progress | Done
+   - Add a task: type in the input at the bottom of any column
+     and press Enter or click +
+   - Move a task: drag and drop it to another column
+   - Edit a task: click on any task card to open the edit modal
+   - Delete a task: open the task modal and click "Delete Task"
+ 
+5. LOGOUT
+   -------
+   - Click the logout icon at the bottom of the left sidebar
+   - Clears your session and returns to the login page
+ 
+================================================================
+  API ENDPOINTS
+================================================================
+ 
+  Auth:
+    POST  /api/auth/register   → create new account
+    POST  /api/auth/login      → login, returns JWT token
+ 
+  Tasks (all require Authorization: Bearer <token> header):
+    GET    /api/tasks          → get all tasks for logged-in user
+    POST   /api/tasks          → create a new task
+    PUT    /api/tasks/:id      → update a task (title, columnId)
+    DELETE /api/tasks/:id      → delete a task
+ 
+  Health:
+    GET   /health              → check if backend is running
