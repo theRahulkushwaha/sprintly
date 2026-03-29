@@ -4,16 +4,11 @@ import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
 import TaskModal from "./TaskModal";
 
-export default function TaskCard({ task }) {
+export default function TaskCard({ task, accentColor }) {
   const [open, setOpen] = useState(false);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task._id });
 
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: task._id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
 
   return (
     <>
@@ -22,16 +17,17 @@ export default function TaskCard({ task }) {
         style={style}
         {...attributes}
         {...listeners}
-        whileHover={{ scale: 1.04 }}
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen(true);
-        }}
-        className="bg-[#f9fafb] p-4 rounded-2xl shadow-sm cursor-pointer"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        onClick={() => setOpen(true)}
+        className="bg-white/4 hover:bg-white/7 border border-white/8 hover:border-white/15 rounded-2xl p-4 cursor-pointer transition-all group"
       >
-        {task.title}
+        <p className="text-white/80 text-sm leading-relaxed">{task.title}</p>
+        <div className="flex items-center justify-between mt-3">
+          <div className={`w-1.5 h-1.5 rounded-full ${accentColor || "bg-slate-500"}`} />
+          <span className="text-white/20 text-xs opacity-0 group-hover:opacity-100 transition-opacity">Click to edit</span>
+        </div>
       </motion.div>
-
       {open && <TaskModal task={task} onClose={() => setOpen(false)} />}
     </>
   );
