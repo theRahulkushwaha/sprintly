@@ -1,5 +1,4 @@
 import Project from "../models/Project.js";
-import Task from "../models/Task.js";
 
 export const getProjects = async (req, res) => {
   try {
@@ -15,7 +14,7 @@ export const getProjects = async (req, res) => {
 export const createProject = async (req, res) => {
   try {
     const { name, description, color } = req.body;
-    if (!name) return res.status(400).json({ message: "Project name required" });
+    if (!name) return res.status(400).json({ message: "Project name is required" });
     const project = await Project.create({
       name, description, color: color || "#6366f1",
       owner: req.user.id, members: [req.user.id],
@@ -43,7 +42,6 @@ export const deleteProject = async (req, res) => {
   try {
     const project = await Project.findOneAndDelete({ _id: req.params.id, owner: req.user.id });
     if (!project) return res.status(404).json({ message: "Project not found" });
-    await Task.deleteMany({ projectId: req.params.id });
     res.json({ message: "Deleted" });
   } catch (err) {
     res.status(500).json({ message: "Failed to delete project" });

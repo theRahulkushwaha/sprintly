@@ -1,10 +1,8 @@
 import { DndContext, closestCorners } from "@dnd-kit/core";
 import Column from "./Column";
-import TaskModal from "./TaskModal";
 import { useTaskStore } from "../../store/useTaskStore";
 import { useProjectStore } from "../../store/useProjectStore";
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect } from "react";
 import { FolderKanban } from "lucide-react";
 
 const columns = [
@@ -13,50 +11,43 @@ const columns = [
   { id: "done", title: "Done", color: "bg-emerald-500", dot: "#10b981" },
 ];
 
-export default function Board({ onAddTask }) {
+export default function Board() {
   const { tasks, moveTask, fetchTasks } = useTaskStore();
   const { activeProject } = useProjectStore();
-  const [editTask, setEditTask] = useState(null);
 
   useEffect(() => {
     fetchTasks(activeProject?._id);
-  }, [activeProject?._id]);
+  }, [activeProject]);
 
   const handleDragEnd = ({ active, over }) => {
     if (!over) return;
-    const newColumnId =
-      columns.find((c) => c.id === over.id)?.id ||
-      tasks.find((t) => t._id === over.id)?.columnId;
+    const newColumnId = columns.find((c) => c.id === over.id)?.id || tasks.find((t) => t._id === over.id)?.columnId;
     if (newColumnId) moveTask(active.id, newColumnId);
   };
 
   if (!activeProject) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center">
+      <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-6">
+        <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center">
           <FolderKanban size={28} className="text-white/20" />
         </div>
-        <p className="text-white/30 text-sm">No project selected</p>
-        <p className="text-white/15 text-xs">Create or select a project from the sidebar</p>
+        <div>
+          <p className="text-white/50 font-medium">No project selected</p>
+          <p className="text-white/20 text-sm mt-1">Create a project from the sidebar to get started</p>
+        </div>
       </div>
     );
   }
 
   return (
     <DndContext collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
-      <div className="flex gap-5 p-6 overflow-x-auto flex-1 h-full items-start">
-        {columns.map((col, i) => (
-          <motion.div key={col.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
-            <Column
-              column={col}
-              tasks={tasks.filter((t) => t.columnId === col.id)}
-              onEditTask={setEditTask}
-              projectId={activeProject._id}
-            />
-          </motion.div>
+      <div className="flex gap-5 p-6 overflow-x-auto flex-1 h-full">
+        {columns.map((col) => (
+          <Column key={col.id} column={col}
+            tasks={tasks.filter((t) => t.columnId === col.id)}
+            projectId={activeProject?._id} />
         ))}
       </div>
-      {editTask && <TaskModal task={editTask} onClose={() => setEditTask(null)} />}
     </DndContext>
   );
 }

@@ -9,5 +9,4 @@ router.put("/:id", auth, updateTask);
 router.delete("/:id", auth, deleteTask);
 router.post("/:id/comments", auth, addComment);
 router.delete("/:id/comments/:commentId", auth, deleteComment);
-
 export default router;

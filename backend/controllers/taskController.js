@@ -13,17 +13,13 @@ export const getTasks = async (req, res) => {
 
 export const createTask = async (req, res) => {
   try {
-    const { title, columnId, description, priority, dueDate, projectId, assigneeName } = req.body;
+    const { title, columnId, description, priority, dueDate, projectId } = req.body;
     if (!title) return res.status(400).json({ message: "Title is required" });
     const task = await Task.create({
-      title,
+      title, description, priority, dueDate,
       columnId: columnId || "todo",
-      description: description || "",
-      priority: priority || "medium",
-      dueDate: dueDate || null,
-      projectId: projectId || null,
-      assigneeName: assigneeName || "",
       userId: req.user.id,
+      projectId: projectId || null,
     });
     res.status(201).json(task);
   } catch (err) {
@@ -58,12 +54,10 @@ export const addComment = async (req, res) => {
   try {
     const { text } = req.body;
     if (!text) return res.status(400).json({ message: "Comment text required" });
-    const task = await Task.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id },
-      { $push: { comments: { text, author: req.user.id, authorName: req.user.name } } },
-      { new: true }
-    );
+    const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ message: "Task not found" });
+    task.comments.push({ text, author: req.user.id, authorName: req.user.name });
+    await task.save();
     res.json(task);
   } catch (err) {
     res.status(500).json({ message: "Failed to add comment" });
@@ -72,11 +66,10 @@ export const addComment = async (req, res) => {
 
 export const deleteComment = async (req, res) => {
   try {
-    const task = await Task.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id },
-      { $pull: { comments: { _id: req.params.commentId } } },
-      { new: true }
-    );
+    const task = await Task.findById(req.params.id);
+    if (!task) return res.status(404).json({ message: "Task not found" });
+    task.comments = task.comments.filter(c => c._id.toString() !== req.params.commentId);
+    await task.save();
     res.json(task);
   } catch (err) {
     res.status(500).json({ message: "Failed to delete comment" });

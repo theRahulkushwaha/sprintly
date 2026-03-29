@@ -12,10 +12,8 @@ const taskSchema = new mongoose.Schema({
   columnId: { type: String, enum: ["todo", "progress", "done"], default: "todo" },
   priority: { type: String, enum: ["low", "medium", "high"], default: "medium" },
   dueDate: { type: Date, default: null },
-  projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project", default: null },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  assignee: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
-  assigneeName: { type: String, default: "" },
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project", default: null },
   comments: [commentSchema],
 }, { timestamps: true });
 
