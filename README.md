@@ -9,30 +9,37 @@ Live: https://sprintly-8idu.vercel.app/
 
 ## 📸 Preview
 
-<p align="center">
-  <img src="./AppImages/login.png" width="45%" /><br/>
-  <b>🔐 Login</b>
-  
-  <img src="./AppImages/Dashboard.png" width="45%" /><br/>
-  <b>📊 Dashboard</b>
-</p>
+<table align="center">
+  <tr>
+    <td align="center" width="50%">
+      <img src="./AppImages/login.png" width="100%"/><br/>
+      <b>🔐 Login</b>
+    </td>
+    <td align="center" width="50%">
+      <img src="./AppImages/Dashboard.png" width="100%"/><br/>
+      <b>📊 Dashboard</b>
+    </td>
+  </tr>
 
-<br/>
+  <tr>
+    <td align="center">
+      <img src="./AppImages/Board.png" width="100%"/><br/>
+      <b>📋 Kanban Board</b>
+    </td>
+    <td align="center">
+      <img src="./AppImages/manageproject.png" width="100%"/><br/>
+      <b>📁 Manage Projects</b>
+    </td>
+  </tr>
 
-<p align="center">
-  <img src="./AppImages/Board.png" width="45%" /><br/>
-  <b>📋 Kanban Board</b>
-  
-  <img src="/AppImages/manageproject.png" width="45%" /><br/>
-  <b>📁 Manage Projects</b>
-</p>
-
-<br/>
-
-<p align="center">
-  <img src="./AppImages/manageproject.png" width="45%" /><br/>
-  <b>👤 Profile / Settings</b>
-</p>
+  <tr>
+    <td align="center">
+      <img src="./AppImages/profile.png" width="100%"/><br/>
+      <b>👤 Profile / Settings</b>
+    </td>
+    <td></td>
+  </tr>
+</table>
 ---
 
 ## ✨ Features
@@ -236,10 +243,6 @@ npm run dev
 
 ---
 
-
-
----
-
 ## 👨‍💻 Author
 
-**Rahul**
+**Rahul Kushwaha**
