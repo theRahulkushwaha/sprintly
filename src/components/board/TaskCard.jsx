@@ -1,59 +1,158 @@
-import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { motion } from "framer-motion";
-import { Calendar, MessageSquare, AlertCircle } from "lucide-react";
-import TaskModal from "./TaskModal";
 
-const priorityConfig = {
-  high:   { label: "High",   class: "text-red-400 bg-red-500/10 border-red-500/20" },
-  medium: { label: "Medium", class: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
-  low:    { label: "Low",    class: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" },
+import {
+  Calendar,
+  ChevronRight,
+  Trash2,
+  Link2,
+} from "lucide-react";
+
+import { useTaskStore } from "../../store/useTaskStore";
+
+const priorityStyles = {
+  low: "bg-emerald-500/10 text-emerald-400",
+
+  medium:
+    "bg-amber-500/10 text-amber-400",
+
+  high: "bg-red-500/10 text-red-400",
 };
 
-export default function TaskCard({ task, accentColor, dotColor }) {
-  const [open, setOpen] = useState(false);
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task._id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
-  const priority = priorityConfig[task.priority] || priorityConfig.medium;
+export default function TaskCard({
+  task,
+  accentColor,
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({
+    id: task._id,
+  });
 
-  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.columnId !== "done";
+  const { deleteTask, moveTask } =
+    useTaskStore();
+
+  const style = {
+    transform: CSS.Transform.toString(
+      transform
+    ),
+    transition,
+  };
+
+  const handleNext = () => {
+    const columns =
+      window.__columns || [];
+
+    const currentIndex =
+      columns.findIndex(
+        (c) => c.id === task.columnId
+      );
+
+    if (
+      currentIndex !== -1 &&
+      currentIndex < columns.length - 1
+    ) {
+      moveTask(
+        task._id,
+        columns[currentIndex + 1].id
+      );
+    }
+  };
 
   return (
-    <>
-      <motion.div ref={setNodeRef} style={style} {...attributes} {...listeners}
-        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-        onClick={() => setOpen(true)}
-        className="bg-white/4 hover:bg-white/7 border border-white/8 hover:border-white/15 rounded-2xl p-4 cursor-pointer transition-all group">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="bg-[#1a1a24] border border-white/5 hover:border-white/10 rounded-2xl p-4 transition-all group"
+    >
 
-        {/* Priority */}
-        <div className="flex items-center justify-between mb-2.5">
-          <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${priority.class}`}>
-            {priority.label}
-          </span>
-          {task.comments?.length > 0 && (
-            <div className="flex items-center gap-1 text-white/20">
-              <MessageSquare size={11} />
-              <span className="text-xs">{task.comments.length}</span>
-            </div>
-          )}
+      {/* TOP */}
+      <div className="flex items-start justify-between mb-3">
+
+        <div
+          {...attributes}
+          {...listeners}
+          className="flex-1 cursor-grab active:cursor-grabbing"
+        >
+          <div
+            className={`w-2 h-2 rounded-full mb-2 ${accentColor}`}
+          />
+
+          <h3 className="text-white/80 text-sm font-medium">
+            {task.title}
+          </h3>
         </div>
 
-        <p className="text-white/80 text-sm leading-relaxed mb-3">{task.title}</p>
+        {/* DELETE */}
+        <button
+          onClick={() =>
+            deleteTask(task._id)
+          }
+          className="opacity-0 group-hover:opacity-100 text-white/20 hover:text-red-400 transition-all"
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
 
-        {task.description && (
-          <p className="text-white/30 text-xs mb-3 line-clamp-2">{task.description}</p>
-        )}
+      {/* DESCRIPTION */}
+      {task.description && (
+        <p className="text-white/35 text-xs mb-3 line-clamp-3">
+          {task.description}
+        </p>
+      )}
+
+      {/* META */}
+      <div className="flex flex-wrap gap-2 mb-3">
+
+        <span
+          className={`text-[10px] px-2 py-1 rounded-full ${priorityStyles[task.priority]}`}
+        >
+          {task.priority}
+        </span>
 
         {task.dueDate && (
-          <div className={`flex items-center gap-1.5 text-xs ${isOverdue ? "text-red-400" : "text-white/25"}`}>
-            {isOverdue ? <AlertCircle size={11} /> : <Calendar size={11} />}
-            <span>{new Date(task.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
-          </div>
-        )}
-      </motion.div>
+          <span className="text-[10px] px-2 py-1 rounded-full bg-white/5 text-white/50 flex items-center gap-1">
+            <Calendar size={10} />
 
-      {open && <TaskModal task={task} onClose={() => setOpen(false)} />}
-    </>
+            {new Date(
+              task.dueDate
+            ).toLocaleDateString()}
+          </span>
+        )}
+
+        {task.assignedToName && (
+          <span className="text-[10px] px-2 py-1 rounded-full bg-indigo-500/10 text-indigo-400">
+            {task.assignedToName}
+          </span>
+        )}
+      </div>
+
+      {/* RESOURCE */}
+      {task.resourceLink && (
+        <a
+          href={task.resourceLink}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 mb-3"
+        >
+          <Link2 size={12} />
+          Resource
+        </a>
+      )}
+
+      {/* MOVE BUTTON */}
+      <button
+        onClick={handleNext}
+        className="w-full mt-2 bg-white/5 hover:bg-indigo-500/20 border border-white/5 hover:border-indigo-500/30 text-white/50 hover:text-indigo-300 py-2 rounded-xl text-xs flex items-center justify-center gap-1 transition-all"
+      >
+        Move Next
+
+        <ChevronRight size={13} />
+      </button>
+    </div>
   );
 }

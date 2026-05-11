@@ -33,12 +33,26 @@ export const useTaskStore = create((set) => ({
     } catch (err) { console.error(err); }
   },
 
-  moveTask: async (id, columnId) => {
-    try {
-      const res = await API.put(`/tasks/${id}`, { columnId });
-      set((state) => ({ tasks: state.tasks.map((t) => t._id === id ? res.data : t) }));
-    } catch (err) { console.error(err); }
-  },
+ moveTask: async (taskId, newColumnId) => {
+  try {
+    const res = await API.put(
+      `/tasks/${taskId}`,
+      {
+        columnId: newColumnId,
+      }
+    );
+
+    set((state) => ({
+      tasks: state.tasks.map((task) =>
+        task._id === taskId
+          ? res.data
+          : task
+      ),
+    }));
+  } catch (err) {
+    console.error(err);
+  }
+},
 
   addComment: async (taskId, text) => {
     try {

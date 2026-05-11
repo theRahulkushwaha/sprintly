@@ -37,5 +37,45 @@ export const useProjectStore = create((set, get) => ({
     });
   },
 
+  addMember: async (projectId, email) => {
+    const res = await API.post(`/projects/${projectId}/members`, { email });
+    set((state) => ({
+      projects: state.projects.map((p) => p._id === projectId ? res.data : p),
+      activeProject: state.activeProject?._id === projectId ? res.data : state.activeProject,
+    }));
+    return res.data;
+  },
+
+  updateColumns: async (projectId, columns) => {
+  const res = await axios.put(
+    `${API_URL}/projects/${projectId}/columns`,
+    { columns },
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    }
+  );
+
+  set((state) => ({
+    projects: state.projects.map((p) =>
+      p._id === projectId ? res.data : p
+    ),
+
+    activeProject:
+      state.activeProject?._id === projectId
+        ? res.data
+        : state.activeProject,
+  }));
+},
+
+  removeMember: async (projectId, memberId) => {
+    const res = await API.delete(`/projects/${projectId}/members/${memberId}`);
+    set((state) => ({
+      projects: state.projects.map((p) => p._id === projectId ? res.data : p),
+      activeProject: state.activeProject?._id === projectId ? res.data : state.activeProject,
+    }));
+  },
+
   setActiveProject: (project) => set({ activeProject: project }),
 }));
