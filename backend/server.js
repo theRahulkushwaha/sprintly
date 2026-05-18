@@ -1,13 +1,8 @@
 import express from "express";
-
 import mongoose from "mongoose";
-
 import cors from "cors";
-
 import dotenv from "dotenv";
-
 import http from "http";
-
 import { Server } from "socket.io";
 
 import authRoutes from "./routes/authRoutes.js";
@@ -19,25 +14,46 @@ dotenv.config();
 
 const app = express();
 
-const server =
-  http.createServer(app);
+const server = http.createServer(app);
 
-export const io = new Server(
-  server,
-  {
-    cors: {
-      origin:
-        "http://localhost:5173",
+/* =========================
+   ALLOWED ORIGINS
+========================= */
 
-      credentials: true,
-    },
-  }
-);
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.CLIENT_URL,
+];
+
+/* =========================
+   SOCKET.IO
+========================= */
+
+export const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    credentials: true,
+  },
+});
+
+/* =========================
+   CORS
+========================= */
 
 app.use(
   cors({
-    origin:
-      "http://localhost:5173",
+    origin: function (origin, callback) {
+      // allow requests with no origin
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(
+        new Error("CORS not allowed")
+      );
+    },
 
     credentials: true,
   })
@@ -45,22 +61,22 @@ app.use(
 
 app.use(express.json());
 
-/* ROUTES */
+/* =========================
+   ROUTES
+========================= */
+
 app.use("/api/auth", authRoutes);
 
-app.use(
-  "/api/projects",
-  projectRoutes
-);
+app.use("/api/projects", projectRoutes);
 
 app.use("/api/tasks", taskRoutes);
 
-app.use(
-  "/api/workspaces",
-  workspaceRoutes
-);
+app.use("/api/workspaces", workspaceRoutes);
 
-/* SOCKET */
+/* =========================
+   SOCKET EVENTS
+========================= */
+
 io.on("connection", (socket) => {
   console.log(
     "User connected:",
@@ -84,7 +100,10 @@ io.on("connection", (socket) => {
   );
 });
 
-/* DB */
+/* =========================
+   DATABASE
+========================= */
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
@@ -92,9 +111,12 @@ mongoose
       "MongoDB Connected"
     );
 
-    server.listen(5000, () => {
+    const PORT =
+      process.env.PORT || 5000;
+
+    server.listen(PORT, () => {
       console.log(
-        "Server running on port 5000"
+        `Server running on port ${PORT}`
       );
     });
   })
