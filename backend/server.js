@@ -1,30 +1,103 @@
 import express from "express";
+
 import mongoose from "mongoose";
+
 import cors from "cors";
+
 import dotenv from "dotenv";
+
+import http from "http";
+
+import { Server } from "socket.io";
+
 import authRoutes from "./routes/authRoutes.js";
-import taskRoutes from "./routes/taskRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
+import taskRoutes from "./routes/taskRoutes.js";
+import workspaceRoutes from "./routes/workspaceRoutes.js";
 
 dotenv.config();
+
 const app = express();
 
-app.use(cors({
-  origin: process.env.CLIENT_ORIGIN || "*",
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
+const server =
+  http.createServer(app);
+
+export const io = new Server(
+  server,
+  {
+    cors: {
+      origin:
+        "http://localhost:5173",
+
+      credentials: true,
+    },
+  }
+);
+
+app.use(
+  cors({
+    origin:
+      "http://localhost:5173",
+
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
-app.get("/health", (req, res) => res.json({ status: "ok" }));
+/* ROUTES */
 app.use("/api/auth", authRoutes);
-app.use("/api/tasks", taskRoutes);
-app.use("/api/projects", projectRoutes);
 
-const PORT = process.env.PORT || 5000;
-mongoose.connect(process.env.MONGO_URI)
+app.use(
+  "/api/projects",
+  projectRoutes
+);
+
+app.use("/api/tasks", taskRoutes);
+
+app.use(
+  "/api/workspaces",
+  workspaceRoutes
+);
+
+/* SOCKET */
+io.on("connection", (socket) => {
+  console.log(
+    "User connected:",
+    socket.id
+  );
+
+  socket.on(
+    "join-project",
+    (projectId) => {
+      socket.join(projectId);
+    }
+  );
+
+  socket.on(
+    "disconnect",
+    () => {
+      console.log(
+        "User disconnected"
+      );
+    }
+  );
+});
+
+/* DB */
+mongoose
+  .connect(process.env.MONGO_URI)
   .then(() => {
-    console.log("✅ MongoDB Connected");
-    app.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server running on port ${PORT}`));
+    console.log(
+      "MongoDB Connected"
+    );
+
+    server.listen(5000, () => {
+      console.log(
+        "Server running on port 5000"
+      );
+    });
   })
-  .catch((err) => { console.error("❌ Mongo Error:", err.message); process.exit(1); });
+  .catch((err) =>
+    console.log(err)
+  );

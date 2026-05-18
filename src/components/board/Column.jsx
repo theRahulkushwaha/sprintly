@@ -22,9 +22,10 @@ export default function Column({
   projectId,
   onDelete,
 }) {
-  const { setNodeRef } = useDroppable({
-    id: column.id,
-  });
+  const { setNodeRef } =
+    useDroppable({
+      id: column.id,
+    });
 
   const [adding, setAdding] =
     useState(false);
@@ -32,7 +33,7 @@ export default function Column({
   return (
     <div
       ref={setNodeRef}
-      className="w-[300px] shrink-0 flex flex-col max-h-full"
+      className="w-[320px] shrink-0 flex flex-col max-h-full"
     >
 
       {/* HEADER */}
@@ -55,7 +56,6 @@ export default function Column({
 
         <div className="flex items-center gap-1">
 
-          {/* ADD */}
           <button
             onClick={() =>
               setAdding(true)
@@ -65,7 +65,6 @@ export default function Column({
             <Plus size={13} />
           </button>
 
-          {/* DELETE COLUMN */}
           <button
             onClick={onDelete}
             className="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center text-red-400/60 hover:text-red-400 transition-all"
@@ -75,7 +74,7 @@ export default function Column({
         </div>
       </div>
 
-      {/* TASKS */}
+      {/* TASK LIST */}
       <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 pb-2">
 
         <SortableContext
@@ -90,12 +89,14 @@ export default function Column({
             <TaskCard
               key={task._id}
               task={task}
-              accentColor={column.color}
+              accentColor={
+                column.color
+              }
             />
           ))}
         </SortableContext>
 
-        {/* ADD TASK FORM */}
+        {/* TASK FORM */}
         {adding ? (
           <AdvancedTaskForm
             column={column}

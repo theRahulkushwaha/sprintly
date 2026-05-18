@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import BoardPage from "./pages/BoardPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ActivityPage from "./pages/ActivityPage";
 
 export default function App() {
   return (
@@ -12,9 +13,31 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/board" element={<ProtectedRoute><BoardPage /></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/board"
+          element={
+            <ProtectedRoute>
+              <BoardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/activity" element={<ActivityPage />} />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

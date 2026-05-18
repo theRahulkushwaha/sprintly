@@ -1,13 +1,8 @@
 import mongoose from "mongoose";
 
-const commentSchema = new mongoose.Schema(
+const replySchema = new mongoose.Schema(
   {
     text: String,
-
-    author: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
 
     authorName: String,
   },
@@ -15,6 +10,27 @@ const commentSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+const commentSchema =
+  new mongoose.Schema(
+    {
+      text: String,
+
+      author: {
+        type:
+          mongoose.Schema.Types.ObjectId,
+
+        ref: "User",
+      },
+
+      authorName: String,
+
+      replies: [replySchema],
+    },
+    {
+      timestamps: true,
+    }
+  );
 
 const taskSchema = new mongoose.Schema(
   {
@@ -30,7 +46,11 @@ const taskSchema = new mongoose.Schema(
 
     priority: {
       type: String,
-      enum: ["low", "medium", "high"],
+      enum: [
+        "low",
+        "medium",
+        "high",
+      ],
       default: "medium",
     },
 
@@ -39,20 +59,64 @@ const taskSchema = new mongoose.Schema(
       default: "active",
     },
 
+    attachments: [
+      {
+        name: String,
+
+        url: String,
+
+        type: String,
+      },
+    ],
+
+    activity: [
+  {
+    type: {
+      type: String,
+      default: "update",
+    },
+
+    message: {
+      type: String,
+      required: true,
+    },
+
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
+    userName: {
+      type: String,
+      default: "User",
+    },
+
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+],
+
     dueDate: Date,
 
     resourceLink: String,
 
     assignedTo: {
-      type: mongoose.Schema.Types.ObjectId,
+      type:
+        mongoose.Schema.Types.ObjectId,
+
       ref: "User",
     },
 
     assignedToName: String,
 
     projectId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type:
+        mongoose.Schema.Types.ObjectId,
+
       ref: "Project",
+
       required: true,
     },
 
