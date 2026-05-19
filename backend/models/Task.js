@@ -1,42 +1,90 @@
 import mongoose from "mongoose";
 
+/* REPLY SCHEMA */
 const replySchema = new mongoose.Schema(
   {
-    text: String,
+    text: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
-    authorName: String,
+    author: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
+    authorName: {
+      type: String,
+      default: "User",
+    },
   },
   {
     timestamps: true,
   }
 );
 
-const commentSchema =
-  new mongoose.Schema(
-    {
-      text: String,
-
-      author: {
-        type:
-          mongoose.Schema.Types.ObjectId,
-
-        ref: "User",
-      },
-
-      authorName: String,
-
-      replies: [replySchema],
+/* COMMENT SCHEMA */
+const commentSchema = new mongoose.Schema(
+  {
+    text: {
+      type: String,
+      required: true,
+      trim: true,
     },
-    {
-      timestamps: true,
-    }
-  );
 
+    author: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
+    authorName: {
+      type: String,
+      default: "User",
+    },
+
+    replies: [replySchema],
+  },
+  {
+    timestamps: true,
+  }
+);
+
+/* ACTIVITY SCHEMA */
+const activitySchema = new mongoose.Schema({
+  type: {
+    type: String,
+    default: "update",
+  },
+
+  message: {
+    type: String,
+    required: true,
+  },
+
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+
+  userName: {
+    type: String,
+    default: "User",
+  },
+
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+/* TASK SCHEMA */
 const taskSchema = new mongoose.Schema(
   {
     title: {
       type: String,
       required: true,
+      trim: true,
     },
 
     description: {
@@ -46,11 +94,7 @@ const taskSchema = new mongoose.Schema(
 
     priority: {
       type: String,
-      enum: [
-        "low",
-        "medium",
-        "high",
-      ],
+      enum: ["low", "medium", "high"],
       default: "medium",
     },
 
@@ -69,54 +113,28 @@ const taskSchema = new mongoose.Schema(
       },
     ],
 
-    activity: [
-  {
-    type: {
+    activity: [activitySchema],
+
+    dueDate: Date,
+
+    resourceLink: {
       type: String,
-      default: "update",
+      default: "",
     },
 
-    message: {
-      type: String,
-      required: true,
-    },
-
-    userId: {
+    assignedTo: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
 
-    userName: {
+    assignedToName: {
       type: String,
-      default: "User",
+      default: "",
     },
-
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
-  },
-],
-
-    dueDate: Date,
-
-    resourceLink: String,
-
-    assignedTo: {
-      type:
-        mongoose.Schema.Types.ObjectId,
-
-      ref: "User",
-    },
-
-    assignedToName: String,
 
     projectId: {
-      type:
-        mongoose.Schema.Types.ObjectId,
-
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Project",
-
       required: true,
     },
 

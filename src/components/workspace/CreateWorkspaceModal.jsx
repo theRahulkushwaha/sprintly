@@ -106,9 +106,9 @@ export default function CreateWorkspaceModal({
 
           <div className="flex items-center gap-3">
 
-            <div className="w-10 h-10 rounded-2xl bg-indigo-500/15 flex items-center justify-center text-indigo-400">
+            <div className="w-15 h-10 rounded-2xl bg-indigo-500/15 flex items-center justify-center text-indigo-400">
 
-              <Users size={18} />
+              <Users size={16} />
             </div>
 
             <div>
@@ -125,7 +125,7 @@ export default function CreateWorkspaceModal({
 
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40"
+            className="w-15 h-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40"
           >
             <X size={16} />
           </button>
@@ -178,7 +178,7 @@ export default function CreateWorkspaceModal({
                       e.target.value
                     )
                   }
-                  placeholder="member@gmail.com"
+                  placeholder="@gmail.com"
                   className="w-full h-12 rounded-2xl bg-white/5 border border-white/10 pl-11 pr-4 text-white outline-none focus:border-indigo-500/50"
                 />
               </div>
@@ -250,19 +250,29 @@ export default function CreateWorkspaceModal({
           </button>
 
           <button
-            disabled={
-              loading ||
-              !name
-            }
-            onClick={
-              createWorkspace
-            }
-            className="px-5 h-11 rounded-2xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium"
-          >
-            {loading
-              ? "Creating..."
-              : "Create Team"}
-          </button>
+  disabled={
+    loading ||
+    !name
+  }
+  onClick={
+    createWorkspace
+  }
+  className="
+    px-5
+    h-11
+    rounded-2xl
+    bg-indigo-600
+    hover:bg-indigo-500
+    disabled:opacity-50
+    text-white
+    font-medium
+    text-sm
+  "
+>
+  {loading
+    ? "Creating..."
+    : "Create Team"}
+</button>
         </div>
       </div>
     </div>

@@ -1,13 +1,12 @@
 import { create } from "zustand";
-
 import API from "../services/api";
-
 import { socket } from "../socket";
 
-export const useTaskStore =
-  create((set) => ({
+export const useTaskStore = create(
+  (set) => ({
     tasks: [],
 
+    /* FETCH TASKS */
     fetchTasks: async (
       projectId
     ) => {
@@ -27,6 +26,7 @@ export const useTaskStore =
       }
     },
 
+    /* CREATE TASK */
     addTask: async (
       task
     ) => {
@@ -40,6 +40,7 @@ export const useTaskStore =
       }
     },
 
+    /* UPDATE TASK */
     updateTask: async (
       id,
       data
@@ -54,49 +55,71 @@ export const useTaskStore =
       }
     },
 
-    deleteTask: async (
-      id
-    ) => {
-      try {
-        await API.delete(
-          `/tasks/${id}`
-        );
-      } catch (err) {
-        console.error(err);
-      }
-    },
+    /* DELETE TASK */
+    deleteTask: async (id) => {
+  // Optimistic update first
+  set((state) => ({
+    tasks: state.tasks.filter((task) => task._id !== id),
+  }));
+  try {
+    await API.delete(`/tasks/${id}`);
+  } catch (err) {
+    console.error(err);
+  }
+},
+    /* MOVE TASK */
+    moveTask: async (taskId, newColumnId) => {
+  // Optimistic update first
+  set((state) => ({
+    tasks: state.tasks.map((task) =>
+      task._id === taskId
+        ? { ...task, columnId: newColumnId }
+        : task
+    ),
+  }));
+  try {
+    await API.put(`/tasks/${taskId}`, { columnId: newColumnId });
+  } catch (err) {
+    console.error(err);
+    // On error, re-fetch to restore correct state
+  }
+},
 
-    moveTask: async (
-      taskId,
-      newColumnId
-    ) => {
-      try {
-        await API.put(
-          `/tasks/${taskId}`,
-          {
-            columnId:
-              newColumnId,
-          }
-        );
-      } catch (err) {
-        console.error(err);
-      }
-    },
 
+    /* ADD COMMENT */
     addComment: async (
       taskId,
       text
     ) => {
       try {
-        await API.post(
-          `/tasks/${taskId}/comments`,
-          { text }
-        );
+        const res =
+          await API.post(
+            `/tasks/${taskId}/comments`,
+            { text }
+          );
+
+        set((state) => ({
+          tasks:
+            state.tasks.map(
+              (task) =>
+                task._id ===
+                taskId
+                  ? {
+                      ...task,
+                      comments: [
+                        ...task.comments,
+                        res.data,
+                      ],
+                    }
+                  : task
+            ),
+        }));
       } catch (err) {
         console.error(err);
       }
     },
 
+    /* DELETE COMMENT */
     deleteComment:
       async (
         taskId,
@@ -106,11 +129,73 @@ export const useTaskStore =
           await API.delete(
             `/tasks/${taskId}/comments/${commentId}`
           );
+
+          set((state) => ({
+            tasks:
+              state.tasks.map(
+                (task) =>
+                  task._id ===
+                  taskId
+                    ? {
+                        ...task,
+                        comments:
+                          task.comments.filter(
+                            (
+                              c
+                            ) =>
+                              c._id !==
+                              commentId
+                          ),
+                      }
+                    : task
+              ),
+          }));
         } catch (err) {
           console.error(err);
         }
       },
-  }));
+
+    /* ADD REPLY */
+    addReply: async (
+      taskId,
+      commentId,
+      text
+    ) => {
+      try {
+        const res =
+          await API.post(
+            `/tasks/${taskId}/comments/${commentId}/replies`,
+            { text }
+          );
+
+        set((state) => ({
+          tasks:
+            state.tasks.map(
+              (task) =>
+                task._id ===
+                taskId
+                  ? {
+                      ...task,
+                      comments:
+                        task.comments.map(
+                          (
+                            comment
+                          ) =>
+                            comment._id ===
+                            commentId
+                              ? res.data
+                              : comment
+                        ),
+                    }
+                  : task
+            ),
+        }));
+      } catch (err) {
+        console.error(err);
+      }
+    },
+  })
+);
 
 /* SOCKET EVENTS */
 
@@ -137,13 +222,14 @@ socket.on(
   (updatedTask) => {
     useTaskStore.setState(
       (state) => ({
-        tasks: state.tasks.map(
-          (task) =>
-            task._id ===
-            updatedTask._id
-              ? updatedTask
-              : task
-        ),
+        tasks:
+          state.tasks.map(
+            (task) =>
+              task._id ===
+              updatedTask._id
+                ? updatedTask
+                : task
+          ),
       })
     );
   }

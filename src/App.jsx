@@ -6,6 +6,7 @@ import BoardPage from "./pages/BoardPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ActivityPage from "./pages/ActivityPage";
+import CommentsPage from "./pages/CommentsPage";
 
 export default function App() {
   return (
@@ -29,6 +30,10 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/comments"
+  element={<CommentsPage />}
+/>
         <Route path="/activity" element={<ActivityPage />} />
         <Route
           path="/settings"

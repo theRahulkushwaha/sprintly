@@ -1,4 +1,5 @@
 import Task from "../models/Task.js";
+
 import { io } from "../server.js";
 
 const createActivity = ({
@@ -7,40 +8,50 @@ const createActivity = ({
   user,
 }) => ({
   type,
+
   message,
-  userId: user?.id || null,
-  userName: user?.name || "User",
+
+  userId:
+    user?.id || null,
+
+  userName:
+    user?.name || "User",
+
   createdAt: new Date(),
 });
 
-export const getTasks = async (
-  req,
-  res
-) => {
-  try {
-    const filter = {};
+/* GET TASKS */
+export const getTasks =
+  async (req, res) => {
+    try {
+      const filter = {};
 
-    if (req.query.projectId) {
-      filter.projectId =
-        req.query.projectId;
-    }
+      if (
+        req.query.projectId
+      ) {
+        filter.projectId =
+          req.query.projectId;
+      }
 
-    const tasks =
-      await Task.find(filter).sort({
-        createdAt: -1,
+      const tasks =
+        await Task.find(
+          filter
+        ).sort({
+          createdAt: -1,
+        });
+
+      res.json(tasks);
+    } catch (err) {
+      console.log(err);
+
+      res.status(500).json({
+        message:
+          "Failed to fetch tasks",
       });
+    }
+  };
 
-    res.json(tasks);
-  } catch (err) {
-    console.log(err);
-
-    res.status(500).json({
-      message:
-        "Failed to fetch tasks",
-    });
-  }
-};
-
+/* CREATE TASK */
 export const createTask =
   async (req, res) => {
     try {
@@ -50,9 +61,13 @@ export const createTask =
 
           activity: [
             createActivity({
-              type: "created",
+              type:
+                "created",
+
               message: `created task "${req.body.title}"`,
-              user: req.user,
+
+              user:
+                req.user,
             }),
           ],
         });
@@ -77,6 +92,7 @@ export const createTask =
     }
   };
 
+/* UPDATE TASK */
 export const updateTask =
   async (req, res) => {
     try {
@@ -94,18 +110,23 @@ export const updateTask =
           });
       }
 
-      const updates = req.body;
+      const updates =
+        req.body;
 
-      // TRACK CHANGES
       if (
         updates.title &&
-        updates.title !== task.title
+        updates.title !==
+          task.title
       ) {
         task.activity.push(
           createActivity({
-            type: "updated",
+            type:
+              "updated",
+
             message: `renamed task to "${updates.title}"`,
-            user: req.user,
+
+            user:
+              req.user,
           })
         );
       }
@@ -117,9 +138,13 @@ export const updateTask =
       ) {
         task.activity.push(
           createActivity({
-            type: "updated",
+            type:
+              "updated",
+
             message: `changed priority to ${updates.priority}`,
-            user: req.user,
+
+            user:
+              req.user,
           })
         );
       }
@@ -131,10 +156,14 @@ export const updateTask =
       ) {
         task.activity.push(
           createActivity({
-            type: "moved",
+            type:
+              "moved",
+
             message:
               "moved task to another column",
-            user: req.user,
+
+            user:
+              req.user,
           })
         );
       }
@@ -147,24 +176,14 @@ export const updateTask =
       ) {
         task.activity.push(
           createActivity({
-            type: "updated",
+            type:
+              "updated",
+
             message:
               "updated task description",
-            user: req.user,
-          })
-        );
-      }
 
-      if (
-        updates.dueDate !==
-        task.dueDate
-      ) {
-        task.activity.push(
-          createActivity({
-            type: "updated",
-            message:
-              "updated due date",
-            user: req.user,
+            user:
+              req.user,
           })
         );
       }
@@ -194,6 +213,7 @@ export const updateTask =
     }
   };
 
+/* DELETE TASK */
 export const deleteTask =
   async (req, res) => {
     try {
@@ -237,12 +257,16 @@ export const deleteTask =
     }
   };
 
+/* ADD COMMENT */
 export const addComment =
   async (req, res) => {
     try {
+      const { text } =
+        req.body;
+
       const task =
         await Task.findById(
-          req.params.id
+          req.params.taskId
         );
 
       if (!task) {
@@ -254,19 +278,30 @@ export const addComment =
           });
       }
 
-      task.comments.push({
-        text: req.body.text,
+      const newComment = {
+        text,
+
         author:
           req.user.id,
+
         authorName:
           req.user.name,
-      });
+      };
+
+      task.comments.push(
+        newComment
+      );
 
       task.activity.push(
         createActivity({
-          type: "comment",
-          message: `commented: "${req.body.text}"`,
-          user: req.user,
+          type:
+            "comment",
+
+          message:
+            "added a comment",
+
+          user:
+            req.user,
         })
       );
 
@@ -279,7 +314,9 @@ export const addComment =
         task
       );
 
-      res.json(task);
+      res.status(201).json(
+        task
+      );
     } catch (err) {
       console.log(err);
 
@@ -290,11 +327,89 @@ export const addComment =
     }
   };
 
+/* ADD REPLY */
+export const addReply =
+  async (req, res) => {
+    try {
+      const { text } =
+        req.body;
+
+      const task =
+        await Task.findById(
+          req.params.taskId
+        );
+
+      if (!task) {
+        return res
+          .status(404)
+          .json({
+            message:
+              "Task not found",
+          });
+      }
+
+      const comment =
+        task.comments.id(
+          req.params.commentId
+        );
+
+      if (!comment) {
+        return res
+          .status(404)
+          .json({
+            message:
+              "Comment not found",
+          });
+      }
+
+      comment.replies.push({
+        text,
+
+        author:
+          req.user.id,
+
+        authorName:
+          req.user.name,
+      });
+
+      task.activity.push(
+        createActivity({
+          type:
+            "comment",
+
+          message:
+            "replied to a comment",
+
+          user:
+            req.user,
+        })
+      );
+
+      await task.save();
+
+      io.to(
+        task.projectId.toString()
+      ).emit(
+        "task-updated",
+        task
+      );
+
+      res.status(201).json(
+        task
+      );
+    } catch (err) {
+      console.log(err);
+
+      res.status(500).json({
+        message:
+          "Failed to add reply",
+      });
+    }
+  };
+
+/* DELETE COMMENT */
 export const deleteComment =
-  async (
-    req,
-    res
-  ) => {
+  async (req, res) => {
     try {
       const task =
         await Task.findById(
@@ -319,10 +434,14 @@ export const deleteComment =
 
       task.activity.push(
         createActivity({
-          type: "comment",
+          type:
+            "comment",
+
           message:
             "deleted a comment",
-          user: req.user,
+
+          user:
+            req.user,
         })
       );
 
