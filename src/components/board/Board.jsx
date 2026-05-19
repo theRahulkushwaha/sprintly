@@ -9,7 +9,7 @@ import {
 
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 import { Plus, LayoutGrid, Sparkles } from "lucide-react";
 
@@ -20,6 +20,9 @@ import { useTaskStore } from "../../store/useTaskStore";
 import { useProjectStore } from "../../store/useProjectStore";
 
 import { socket } from "../../socket";
+
+import { useRBAC, PERMISSIONS } from "../../hooks/useRBAC";
+import { PermissionGuard } from "../rbac/PermissionGuard";
 
 const COLORS = [
   "bg-slate-500",
@@ -34,14 +37,13 @@ export default function Board() {
   const { tasks, moveTask, fetchTasks } = useTaskStore();
   const { activeProject, updateColumns } = useProjectStore();
   const [newColumn, setNewColumn] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const { hasPermission } = useRBAC();
 
-  // ─── Sensors ────────────────────────────────────────────────────────────────
-  // PointerSensor with a small distance constraint so clicks on buttons
-  // don't accidentally start a drag.
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // must move 8px before drag starts
+        distance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -49,12 +51,41 @@ export default function Board() {
     })
   );
 
+  const loadTasks = useCallback(async () => {
+    if (activeProject?._id) {
+      await fetchTasks(activeProject._id);
+    }
+  }, [activeProject, fetchTasks]);
+
   useEffect(() => {
     if (activeProject?._id) {
-      fetchTasks(activeProject._id);
+      loadTasks();
       socket.emit("join-project", activeProject._id);
+      
+      // Socket event listeners for real-time updates
+      socket.on("task-created", () => {
+        loadTasks();
+      });
+      socket.on("task-updated", () => {
+        loadTasks();
+      });
+      socket.on("task-deleted", () => {
+        loadTasks();
+      });
+      
+      return () => {
+        socket.off("task-created");
+        socket.off("task-updated");
+        socket.off("task-deleted");
+      };
     }
-  }, [activeProject]);
+  }, [activeProject, loadTasks]);
+
+  // Manual refresh function
+  const refreshTasks = () => {
+    loadTasks();
+    setRefreshKey(prev => prev + 1);
+  };
 
   if (!activeProject) {
     return (
@@ -113,12 +144,10 @@ export default function Board() {
 
   return (
     <div className="h-full flex flex-col bg-[#0f1117] overflow-hidden">
-
       {/* HEADER */}
       <div className="shrink-0 border-b border-white/5 bg-[#0f1117]/90 backdrop-blur-2xl z-10">
         <div className="px-4 md:px-6 lg:px-8 py-5">
           <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
-
             {/* LEFT */}
             <div className="min-w-0">
               <div className="flex items-center gap-3 mb-2">
@@ -142,30 +171,35 @@ export default function Board() {
                 <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/50 text-xs">
                   {columns.length} Columns
                 </div>
-                <div className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs flex items-center gap-1.5">
+                <button
+                  onClick={refreshTasks}
+                  className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs flex items-center gap-1.5 hover:bg-indigo-500/20 transition-all"
+                >
                   <Sparkles size={12} />
-                  Live Workspace
-                </div>
+                  Refresh
+                </button>
               </div>
             </div>
 
-            {/* RIGHT */}
-            <div className="w-full xl:w-auto flex flex-col sm:flex-row gap-3">
-              <input
-                value={newColumn}
-                onChange={(e) => setNewColumn(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addColumn()}
-                placeholder="Create workflow column..."
-                className="h-12 w-full sm:w-[250px] bg-white/[0.04] border border-white/10 rounded-2xl px-4 text-sm text-white placeholder:text-white/20 outline-none focus:border-indigo-500/40 transition-all"
-              />
-              <button
-                onClick={addColumn}
-                className="h-12 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-600/20 whitespace-nowrap"
-              >
-                <Plus size={16} />
-                Add Column
-              </button>
-            </div>
+            {/* RIGHT - Add column section with permission */}
+            <PermissionGuard permission={PERMISSIONS.MANAGE_COLUMNS}>
+              <div className="w-full xl:w-auto flex flex-col sm:flex-row gap-3">
+                <input
+                  value={newColumn}
+                  onChange={(e) => setNewColumn(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addColumn()}
+                  placeholder="Create workflow column..."
+                  className="h-12 w-full sm:w-[250px] bg-white/[0.04] border border-white/10 rounded-2xl px-4 text-sm text-white placeholder:text-white/20 outline-none focus:border-indigo-500/40 transition-all"
+                />
+                <button
+                  onClick={addColumn}
+                  className="h-12 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-600/20 whitespace-nowrap"
+                >
+                  <Plus size={16} />
+                  Add Column
+                </button>
+              </div>
+            </PermissionGuard>
           </div>
         </div>
       </div>
@@ -208,5 +242,3 @@ export default function Board() {
     </div>
   );
 }
-
-

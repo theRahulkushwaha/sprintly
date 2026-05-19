@@ -4,20 +4,32 @@ import jwt from "jsonwebtoken";
 
 export const register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role, organization } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !organization) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
+    // Check if email already exists in any organization
     const existing = await User.findOne({ email });
     if (existing) return res.status(400).json({ message: "User already exists" });
 
     const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hashed });
+    const user = await User.create({ 
+      name, 
+      email, 
+      password: hashed,
+      role: role || 'developer',
+      organization: organization.trim()
+    });
 
-  
-    res.status(201).json({ id: user._id, name: user.name, email: user.email });
+    res.status(201).json({ 
+      id: user._id, 
+      name: user.name, 
+      email: user.email, 
+      role: user.role,
+      organization: user.organization 
+    });
   } catch (err) {
     console.error("REGISTER ERROR:", err);
     res.status(500).json({ message: "Register failed" });
@@ -39,12 +51,27 @@ export const login = async (req, res) => {
     if (!match) return res.status(400).json({ message: "Wrong password" });
 
     const token = jwt.sign(
-      { id: user._id, name: user.name, email: user.email },
+      { 
+        id: user._id, 
+        name: user.name, 
+        email: user.email, 
+        role: user.role,
+        organization: user.organization 
+      },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        email: user.email, 
+        role: user.role,
+        organization: user.organization 
+      } 
+    });
   } catch (err) {
     console.error("LOGIN ERROR:", err);
     res.status(500).json({ message: "Login failed" });
@@ -63,5 +90,49 @@ export const changePassword = async (req, res) => {
     res.json({ message: "Password updated" });
   } catch (err) {
     res.status(500).json({ message: "Failed to update password" });
+  }
+};
+
+export const updateUserRole = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+    
+    // Only admins can change roles
+    const requestingUser = await User.findById(req.user.id);
+    if (requestingUser.role !== 'admin') {
+      return res.status(403).json({ message: "Only admins can change user roles" });
+    }
+    
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { role },
+      { new: true }
+    ).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to update user role" });
+  }
+};
+
+export const getUsers = async (req, res) => {
+  try {
+    // Only admins can view all users
+    const requestingUser = await User.findById(req.user.id);
+    if (requestingUser.role !== 'admin') {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+    
+    const users = await User.find().select('-password');
+    res.json(users);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch users" });
   }
 };

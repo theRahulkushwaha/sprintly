@@ -9,10 +9,16 @@ import {
   Trash2,
   Flag,
   ArrowUpRight,
+  Send,
+  X,
 } from "lucide-react";
 import TaskModal from "./TaskModal";
 import { useTaskStore } from "../../store/useTaskStore";
 import { useProjectStore } from "../../store/useProjectStore";
+import { useAuthStore } from "../../store/useAuthStore";
+import { useRBAC, PERMISSIONS } from "../../hooks/useRBAC";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 const priorityStyles = {
   low: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -22,8 +28,14 @@ const priorityStyles = {
 
 export default function TaskCard({ task, accentColor }) {
   const [open, setOpen] = useState(false);
-  const { deleteTask, moveTask } = useTaskStore();
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const { deleteTask, moveTask, addComment } = useTaskStore();
   const { activeProject } = useProjectStore();
+  const { hasPermission, isDeveloper } = useRBAC();
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
 
   const {
     attributes,
@@ -32,7 +44,10 @@ export default function TaskCard({ task, accentColor }) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task._id });
+  } = useSortable({ 
+    id: task._id,
+    disabled: isDeveloper && task.assignedTo !== user?._id
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -59,15 +74,42 @@ export default function TaskCard({ task, accentColor }) {
     deleteTask(task._id);
   };
 
+  const handleCardClick = () => {
+    if (!isDragging) {
+      navigate(`/subtasks/${task._id}`);
+    }
+  };
+
+  const handleCommentClick = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setShowCommentModal(true);
+  };
+
+  const handleSubmitComment = async () => {
+    if (!commentText.trim()) return;
+    
+    setSubmitting(true);
+    try {
+      await addComment(task._id, commentText);
+      setCommentText("");
+      setShowCommentModal(false);
+    } catch (err) {
+      console.error("Failed to add comment:", err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <>
       <div
         ref={setNodeRef}
         style={style}
-        {...attributes}
-        {...listeners}
-        onClick={() => !isDragging && setOpen(true)}
-        className="relative group overflow-hidden rounded-2xl border border-white/[0.05] bg-gradient-to-b from-[#181820] to-[#12131a] px-3 py-3 transition-all duration-300 cursor-grab active:cursor-grabbing min-h-[82px] hover:border-indigo-500/25 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/30"
+        {...(hasPermission(PERMISSIONS.MOVE_TASK) ? attributes : {})}
+        {...(hasPermission(PERMISSIONS.MOVE_TASK) ? listeners : {})}
+        onClick={handleCardClick}
+        className="relative group overflow-hidden rounded-2xl border border-white/[0.05] bg-gradient-to-b from-[#181820] to-[#12131a] px-3 py-3 transition-all duration-300 min-h-[82px] hover:border-indigo-500/25 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/30 cursor-pointer"
       >
         {/* LEFT ACCENT */}
         <div className={"absolute left-0 top-0 h-full w-1.5 rounded-l-2xl " + accentColor} />
@@ -104,10 +146,7 @@ export default function TaskCard({ task, accentColor }) {
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpen(true);
-              }}
+              onClick={handleCommentClick}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.05] text-white/45 hover:text-indigo-300 hover:border-indigo-500/20 hover:bg-indigo-500/10 transition-all"
             >
               <MessageSquare size={12} />
@@ -167,7 +206,7 @@ export default function TaskCard({ task, accentColor }) {
             )}
 
             <div className="flex gap-2">
-              {nextColumn && (
+              {nextColumn && hasPermission(PERMISSIONS.MOVE_TASK) && (
                 <button
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={handleMoveNext}
@@ -178,19 +217,94 @@ export default function TaskCard({ task, accentColor }) {
                 </button>
               )}
 
-              <button
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={handleDelete}
-                className="w-10 h-10 rounded-2xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/10 flex items-center justify-center text-red-400 transition-all"
-              >
-                <Trash2 size={15} />
-              </button>
+              {hasPermission(PERMISSIONS.DELETE_TASK) && (
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={handleDelete}
+                  className="w-10 h-10 rounded-2xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/10 flex items-center justify-center text-red-400 transition-all"
+                >
+                  <Trash2 size={15} />
+                </button>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {open && <TaskModal task={task} onClose={() => setOpen(false)} />}
+      {/* Comment Modal */}
+      <AnimatePresence>
+        {showCommentModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowCommentModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-[#1a1a24] border border-white/10 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-white/10 bg-[#151821]">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center">
+                    <MessageSquare size={14} className="text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold">Add Comment</h3>
+                    <p className="text-white/30 text-xs">Task: {task.title}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowCommentModal(false)}
+                  className="text-white/40 hover:text-white/70 transition-all"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-4">
+                <textarea
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Write your comment here..."
+                  rows={4}
+                  className="w-full bg-[#0f0f13] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-indigo-500 transition-all resize-none"
+                  autoFocus
+                />
+              </div>
+
+              {/* Footer */}
+              <div className="flex gap-3 p-4 border-t border-white/10 bg-[#151821]">
+                <button
+                  onClick={() => setShowCommentModal(false)}
+                  className="flex-1 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitComment}
+                  disabled={submitting || !commentText.trim()}
+                  className="flex-1 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium transition-all flex items-center justify-center gap-2"
+                >
+                  {submitting ? (
+                    "Posting..."
+                  ) : (
+                    <>
+                      <Send size={14} />
+                      Post Comment
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

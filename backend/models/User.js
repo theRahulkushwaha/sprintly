@@ -30,13 +30,27 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      default: "member",
+      enum: ['admin', 'manager', 'developer'],
+      default: 'developer'
+    },
+
+    organization: {
+      type: String,
+      required: true,
+      trim: true,
     },
 
     workspace: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Workspace",
     },
+
+    workspaceTeams: [
+  {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "WorkspaceTeam",
+  },
+],
 
     notifications: [
       {
@@ -45,7 +59,6 @@ const userSchema = new mongoose.Schema(
           type: Boolean,
           default: false,
         },
-
         createdAt: {
           type: Date,
           default: Date.now,
@@ -58,7 +71,4 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model(
-  "User",
-  userSchema
-);
+export default mongoose.model("User", userSchema);

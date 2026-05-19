@@ -7,6 +7,11 @@ import SettingsPage from "./pages/SettingsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ActivityPage from "./pages/ActivityPage";
 import CommentsPage from "./pages/CommentsPage";
+import AdminPanel from "./pages/AdminPanel";
+import ProjectsPage from "./pages/ProjectsPage";
+import SubTaskPage from "./pages/SubTaskPage";
+import ManagerPanel from "./pages/ManagerPanel";
+
 
 export default function App() {
   return (
@@ -22,6 +27,40 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/admin"
+  element={
+    <ProtectedRoute>
+      <AdminPanel />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+          path="/projects"
+          element={
+            <ProtectedRoute>
+              <ProjectsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+  path="/subtasks/:taskId"
+  element={
+    <ProtectedRoute>
+      <SubTaskPage />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/manager"
+  element={
+    <ProtectedRoute>
+      <ManagerPanel />
+    </ProtectedRoute>
+  }
+/>
         <Route
           path="/board"
           element={

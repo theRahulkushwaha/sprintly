@@ -14,13 +14,24 @@ export const useAuthStore = create((set) => ({
     return user;
   },
 
-  register: async (name, email, password) => {
-    await API.post("/auth/register", { name, email, password });
+  register: async (name, email, password, role, organization) => {
+    await API.post("/auth/register", { name, email, password, role, organization });
   },
 
   logout: () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     set({ token: null, user: null });
+  },
+  
+  updateUserRole: async (userId, role) => {
+    const res = await API.put(`/auth/users/${userId}/role`, { role });
+    const updatedUser = res.data;
+    const currentUser = useAuthStore.getState().user;
+    if (updatedUser._id === currentUser?._id) {
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      set({ user: updatedUser });
+    }
+    return updatedUser;
   },
 }));
