@@ -12,6 +12,7 @@ import {
   Activity,
   MessageSquare,
   Building2,
+  Video,
 } from "lucide-react";
 
 import {
@@ -92,6 +93,7 @@ export default function Sidebar() {
       icon: Layers,
       label: "Board",
     },
+     { to: "/meetings", icon: Video, label: "Meetings" },
     {
       to: "/manager",
       icon: Users,

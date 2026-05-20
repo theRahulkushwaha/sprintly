@@ -11,6 +11,7 @@ import AdminPanel from "./pages/AdminPanel";
 import ProjectsPage from "./pages/ProjectsPage";
 import SubTaskPage from "./pages/SubTaskPage";
 import ManagerPanel from "./pages/ManagerPanel";
+import MeetingsPage from "./pages/MeetingsPage";
 
 
 export default function App() {
@@ -58,6 +59,14 @@ export default function App() {
   element={
     <ProtectedRoute>
       <ManagerPanel />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/meetings"
+  element={
+    <ProtectedRoute>
+      <MeetingsPage />
     </ProtectedRoute>
   }
 />
